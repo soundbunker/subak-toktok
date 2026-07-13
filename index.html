@@ -142,6 +142,7 @@
   .percentile-box .pct-desc { font-size: 13px; color: #795548; margin-top: 6px; line-height: 1.5; }
 
   /* ── 수박송 ───────────────────────── */
+  .song-credit { font-size: 13px; color: var(--muted); margin: -6px 0 12px; }
   .song-embed { border-radius: 14px; overflow: hidden; aspect-ratio: 16 / 9; background: #000; }
   .song-embed iframe { width: 100%; height: 100%; border: 0; }
 
@@ -151,7 +152,42 @@
     display: none;
   }
   .market h2 { color: var(--red-dark); }
+  .market a { text-decoration: none; }
   .market p { font-size: 14px; line-height: 1.7; color: #6d4c41; }
+  .disclosure {
+    margin-top: 12px;
+    font-size: 11px !important;
+    color: #a1887f !important;
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  /* ── 사운드벙커 브랜드 푸터 ─────────────── */
+  .brand {
+    text-align: center;
+    margin-top: 28px;
+    padding: 24px 16px;
+    border-top: 1px solid rgba(27, 94, 32, 0.12);
+  }
+  .brand .earth { font-size: 28px; }
+  .brand .tagline {
+    margin-top: 8px;
+    font-size: 14px;
+    color: var(--green-dark);
+    line-height: 1.7;
+  }
+  .brand .tagline b { letter-spacing: 0.5px; }
+  .brand a {
+    display: inline-block;
+    margin-top: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    text-decoration: none;
+    background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+    padding: 8px 18px;
+    border-radius: 20px;
+  }
 
   /* ── 평가 모달 ─────────────────────── */
   .modal-backdrop {
@@ -255,6 +291,7 @@
   <!-- ── 수박송 ────────────────────────────── -->
   <section class="card">
     <h2>🎵 수박 먹으면서 듣는 수박송</h2>
+    <p class="song-credit">더사운드벙커 직원 <b>'김명재'</b>의 수박송 🍉🎤</p>
     <div class="song-embed">
       <iframe id="songFrame"
         src="https://www.youtube.com/embed/1DNauvxw66g"
@@ -264,17 +301,18 @@
     </div>
   </section>
 
-  <!-- ── 실패 위로 + 농부 마켓 ─────────────── -->
+  <!-- ── 실패 위로 + 농부 수박 (쿠팡 파트너스) ─── -->
   <section class="card market" id="marketCard">
     <h2>😢 수박톡톡에 실패하셨나요?</h2>
     <p>
       괜찮아요, 수박 고르기는 원래 어려운 거예요.<br>
       상심한 당신을 위해, 두드릴 필요도 없이 맛있는<br>
-      <b>우리나라 최고의 수박 — ㅇㅇㅇ 농부님의 수박</b>을 준비했어요.
+      <b>우리나라 최고의 수박 — 농부님의 꿀수박</b>을 준비했어요.
     </p>
-    <a href="https://example.com/farmer-market" target="_blank" rel="noopener">
-      <button class="big-btn" style="margin-top:14px">🧑‍🌾 ㅇㅇㅇ 농부의 온라인 마켓 가기</button>
+    <a href="https://link.coupang.com/a/fmcl9d7sQu" target="_blank" rel="noopener sponsored">
+      <button class="big-btn" style="margin-top:14px">🧑‍🌾 농부의 꿀수박 주문하러 가기</button>
     </a>
+    <p class="disclosure">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>
   </section>
 
   <!-- ── 나의 기록 ─────────────────────────── -->
@@ -287,6 +325,13 @@
     * 익은 정도 판별은 타격음 주파수 분석 기반의 참고용 결과이며, 당도를 보장하지 않습니다.<br>
     * 상위 % 통계는 프로토타입 시뮬레이션 데이터입니다.
   </p>
+
+  <!-- ── 사운드벙커 브랜드 ─────────────────── -->
+  <footer class="brand">
+    <div class="earth">🌍</div>
+    <div class="tagline">'지구'를 닮은 '소리'를 전달하는<br><b>사운드벙커</b></div>
+    <a href="https://www.instagram.com/thesoundbunker" target="_blank" rel="noopener">📷 @thesoundbunker</a>
+  </footer>
 </div>
 
 <!-- ── 재방문 평가 모달 ──────────────────────── -->
