@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>수박톡톡 🍉 — 톡톡 치면 익은 정도를 알려드려요</title>
+<style>
+  :root {
+    --green-dark: #1b5e20;
+    --green: #2e7d32;
+    --green-light: #a5d6a7;
+    --red: #e53948;
+    --red-dark: #c62828;
+    --pink: #ffcdd2;
+    --cream: #fffdf5;
+    --ink: #263238;
+    --muted: #78909c;
+    --radius: 20px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", sans-serif;
+    background: linear-gradient(160deg, #e8f5e9 0%, #fffde7 100%);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+  }
+  .app {
+    width: 100%;
+    max-width: 480px;
+    padding: 20px 16px 48px;
+  }
+
+  /* ── 헤더 ─────────────────────────── */
+  header { text-align: center; padding: 12px 0 20px; }
+  header h1 {
+    font-size: 32px;
+    color: var(--green-dark);
+    letter-spacing: -1px;
+  }
+  header p { color: var(--muted); font-size: 14px; margin-top: 6px; }
+
+  .card {
+    background: #fff;
+    border-radius: var(--radius);
+    padding: 22px 18px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 16px rgba(27, 94, 32, 0.08);
+  }
+  .card h2 {
+    font-size: 17px;
+    color: var(--green-dark);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* ── 수박 버튼 ─────────────────────── */
+  .melon-stage { text-align: center; padding: 8px 0 4px; }
+  .melon {
+    width: 180px; height: 180px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    background: radial-gradient(circle at 35% 30%, #66bb6a, #2e7d32 55%, #1b5e20);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 28px rgba(27, 94, 32, 0.35), inset 0 -8px 20px rgba(0,0,0,0.2);
+    transition: transform 0.12s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .melon:active { transform: scale(0.95); }
+  .melon.listening { animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 10px 28px rgba(27,94,32,.35), 0 0 0 0 rgba(229,57,72,.45); }
+    50%      { box-shadow: 0 10px 28px rgba(27,94,32,.35), 0 0 0 22px rgba(229,57,72,0); }
+  }
+  .melon .stripes {
+    position: absolute; inset: 0; border-radius: 50%;
+    background: repeating-linear-gradient(100deg,
+      transparent 0 22px, rgba(16, 58, 20, 0.55) 22px 34px);
+    mix-blend-mode: multiply;
+  }
+  .melon .face { position: relative; font-size: 44px; z-index: 2; }
+  .stage-label { margin-top: 14px; font-size: 15px; color: var(--green-dark); font-weight: 600; }
+  .stage-sub { font-size: 13px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+
+  .tap-dots { margin-top: 10px; height: 18px; font-size: 15px; letter-spacing: 4px; color: var(--red); }
+
+  .big-btn {
+    display: block; width: 100%;
+    margin-top: 16px;
+    padding: 15px;
+    font-size: 16px; font-weight: 700;
+    color: #fff;
+    background: linear-gradient(135deg, var(--red), var(--red-dark));
+    border: none; border-radius: 14px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(198, 40, 40, 0.3);
+  }
+  .big-btn.secondary { background: linear-gradient(135deg, #43a047, var(--green-dark)); box-shadow: 0 4px 12px rgba(46,125,50,.3); }
+  .big-btn:disabled { opacity: 0.5; cursor: default; }
+
+  /* ── 결과 ─────────────────────────── */
+  #result { display: none; }
+  .verdict {
+    text-align: center;
+    padding: 8px 0 12px;
+  }
+  .verdict .emoji { font-size: 56px; }
+  .verdict .title { font-size: 24px; font-weight: 800; margin-top: 8px; }
+  .verdict .title.ripe { color: var(--red-dark); }
+  .verdict .title.unripe { color: var(--green); }
+  .verdict .title.overripe { color: #8d6e63; }
+  .verdict .desc { font-size: 14px; color: var(--muted); margin-top: 8px; line-height: 1.6; }
+
+  .freq-bar-wrap { margin: 18px 4px 6px; }
+  .freq-scale {
+    height: 14px; border-radius: 7px;
+    background: linear-gradient(90deg, #8d6e63 0%, #e53948 35%, #e53948 65%, #66bb6a 100%);
+    position: relative;
+  }
+  .freq-marker {
+    position: absolute; top: -7px;
+    width: 4px; height: 28px;
+    background: var(--ink); border-radius: 2px;
+    transform: translateX(-50%);
+    transition: left 0.6s cubic-bezier(.2,.8,.3,1.2);
+  }
+  .freq-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 8px; }
+
+  .percentile-box {
+    margin-top: 18px;
+    background: linear-gradient(135deg, #fff8e1, #ffecb3);
+    border-radius: 14px;
+    padding: 16px;
+    text-align: center;
+  }
+  .percentile-box .pct { font-size: 30px; font-weight: 800; color: #e65100; }
+  .percentile-box .pct-desc { font-size: 13px; color: #795548; margin-top: 6px; line-height: 1.5; }
+
+  /* ── 수박송 ───────────────────────── */
+  .song-embed { border-radius: 14px; overflow: hidden; aspect-ratio: 16 / 9; background: #000; }
+  .song-embed iframe { width: 100%; height: 100%; border: 0; }
+
+  /* ── 실패 위로 / 마켓 ──────────────── */
+  .market {
+    background: linear-gradient(135deg, #fce4ec, #f8bbd0);
+    display: none;
+  }
+  .market h2 { color: var(--red-dark); }
+  .market p { font-size: 14px; line-height: 1.7; color: #6d4c41; }
+
+  /* ── 평가 모달 ─────────────────────── */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(38, 50, 56, 0.55);
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 50;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal {
+    background: var(--cream);
+    width: 100%; max-width: 480px;
+    border-radius: 24px 24px 0 0;
+    padding: 28px 20px 40px;
+    text-align: center;
+    animation: slideUp 0.3s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(60px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .modal h3 { font-size: 20px; color: var(--green-dark); }
+  .modal p { font-size: 14px; color: var(--muted); margin: 10px 0 20px; line-height: 1.6; }
+  .rate-row { display: flex; gap: 10px; }
+  .rate-btn {
+    flex: 1;
+    padding: 16px 8px;
+    border: 2px solid var(--green-light);
+    background: #fff;
+    border-radius: 14px;
+    font-size: 15px; font-weight: 700;
+    cursor: pointer;
+    color: var(--ink);
+  }
+  .rate-btn .big { display: block; font-size: 30px; margin-bottom: 6px; }
+  .modal .later { margin-top: 14px; background: none; border: none; color: var(--muted); font-size: 13px; text-decoration: underline; cursor: pointer; }
+
+  .history { font-size: 13px; color: var(--muted); line-height: 1.8; }
+  .history li { list-style: none; display: flex; justify-content: space-between; border-bottom: 1px dashed #e0e0e0; padding: 4px 0; }
+
+  .footnote { font-size: 11px; color: #b0bec5; text-align: center; margin-top: 20px; line-height: 1.6; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: #fff;
+    padding: 12px 20px; border-radius: 24px;
+    font-size: 14px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s;
+    z-index: 60;
+    max-width: 90%;
+    text-align: center;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <h1>🍉 수박톡톡</h1>
+    <p>손가락으로 톡톡, 소리로 알아보는 수박의 익은 정도</p>
+  </header>
+
+  <!-- ── 측정 카드 ──────────────────────────── -->
+  <section class="card" id="tapCard">
+    <div class="melon-stage">
+      <button class="melon" id="melonBtn" aria-label="측정 시작">
+        <span class="stripes"></span>
+        <span class="face" id="melonFace">🎤</span>
+      </button>
+      <div class="stage-label" id="stageLabel">수박을 눌러 측정을 시작하세요</div>
+      <div class="stage-sub" id="stageSub">
+        마이크를 수박 가까이 대고,<br>
+        손가락 마디로 <b>3~5번</b> 통통 두드려 주세요.
+      </div>
+      <div class="tap-dots" id="tapDots"></div>
+    </div>
+  </section>
+
+  <!-- ── 결과 카드 ──────────────────────────── -->
+  <section class="card" id="result">
+    <div class="verdict">
+      <div class="emoji" id="verdictEmoji">🍉</div>
+      <div class="title" id="verdictTitle"></div>
+      <div class="desc" id="verdictDesc"></div>
+    </div>
+
+    <div class="freq-bar-wrap">
+      <div class="freq-scale"><div class="freq-marker" id="freqMarker" style="left:50%"></div></div>
+      <div class="freq-labels"><span>과숙 (낮은 소리)</span><span>잘 익음</span><span>덜 익음 (높은 소리)</span></div>
+    </div>
+
+    <div class="percentile-box">
+      <div class="pct" id="pctValue">—</div>
+      <div class="pct-desc" id="pctDesc"></div>
+    </div>
+
+    <button class="big-btn secondary" id="retryBtn">🔁 다시 측정하기</button>
+  </section>
+
+  <!-- ── 수박송 ────────────────────────────── -->
+  <section class="card">
+    <h2>🎵 수박 먹으면서 듣는 수박송</h2>
+    <div class="song-embed">
+      <iframe id="songFrame"
+        src="https://www.youtube.com/embed/1DNauvxw66g"
+        title="수박송"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen></iframe>
+    </div>
+  </section>
+
+  <!-- ── 실패 위로 + 농부 마켓 ─────────────── -->
+  <section class="card market" id="marketCard">
+    <h2>😢 수박톡톡에 실패하셨나요?</h2>
+    <p>
+      괜찮아요, 수박 고르기는 원래 어려운 거예요.<br>
+      상심한 당신을 위해, 두드릴 필요도 없이 맛있는<br>
+      <b>우리나라 최고의 수박 — ㅇㅇㅇ 농부님의 수박</b>을 준비했어요.
+    </p>
+    <a href="https://example.com/farmer-market" target="_blank" rel="noopener">
+      <button class="big-btn" style="margin-top:14px">🧑‍🌾 ㅇㅇㅇ 농부의 온라인 마켓 가기</button>
+    </a>
+  </section>
+
+  <!-- ── 나의 기록 ─────────────────────────── -->
+  <section class="card" id="historyCard" style="display:none">
+    <h2>📒 나의 수박 기록</h2>
+    <ul class="history" id="historyList"></ul>
+  </section>
+
+  <p class="footnote">
+    * 익은 정도 판별은 타격음 주파수 분석 기반의 참고용 결과이며, 당도를 보장하지 않습니다.<br>
+    * 상위 % 통계는 프로토타입 시뮬레이션 데이터입니다.
+  </p>
+</div>
+
+<!-- ── 재방문 평가 모달 ──────────────────────── -->
+<div class="modal-backdrop" id="rateModal">
+  <div class="modal">
+    <h3>🍉 지난번 수박, 어땠어요?</h3>
+    <p id="rateModalDesc">지난번에 측정했던 수박, 드셔보셨나요?<br>솔직한 평가가 수박톡톡을 더 똑똑하게 만들어요!</p>
+    <div class="rate-row">
+      <button class="rate-btn" data-rate="good"><span class="big">😋</span>꿀수박이었어요</button>
+      <button class="rate-btn" data-rate="soso"><span class="big">😐</span>그럭저럭</button>
+      <button class="rate-btn" data-rate="bad"><span class="big">😭</span>실패했어요…</button>
+    </div>
+    <button class="later" id="rateLater">나중에 평가할게요</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ── 판별 기준 (연구 문헌 기반 휴리스틱, 실데이터로 보정 필요) ──
+  // 타격음의 주 공명 주파수: 익을수록 과육이 물러져 낮아짐
+  const FREQ = {
+    MIN: 60,          // 분석 대역 하한 (Hz)
+    MAX: 600,         // 분석 대역 상한
+    OVERRIPE_MAX: 130,   // 이보다 낮으면 과숙
+    RIPE_MAX: 195,       // 이 사이면 잘 익음
+    IDEAL: 160,          // 이상적인 잘 익은 수박의 공명 주파수
+  };
+  const TAPS_NEEDED = 3;
+  const LISTEN_TIMEOUT_MS = 15000;
+
+  const $ = (id) => document.getElementById(id);
+  const store = {
+    get(key, fallback) {
+      try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
+      catch { return fallback; }
+    },
+    set(key, val) { localStorage.setItem(key, JSON.stringify(val)); },
+  };
+
+  function toast(msg) {
+    const el = $('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => el.classList.remove('show'), 2800);
+  }
+
+  // ── 오디오 측정 ─────────────────────────────
+  let audioCtx = null, analyser = null, micStream = null;
+  let listening = false, tapFreqs = [], listenTimer = null;
+
+  async function startListening() {
+    if (listening) return;
+    try {
+      micStream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+      });
+    } catch {
+      toast('마이크 권한이 필요해요. 브라우저 설정에서 허용해 주세요 🙏');
+      return;
+    }
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    await audioCtx.resume();
+    const src = audioCtx.createMediaStreamSource(micStream);
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 8192;             // 낮은 주파수 해상도 확보 (~5.4Hz/bin @44.1kHz)
+    analyser.smoothingTimeConstant = 0;
+    src.connect(analyser);
+
+    listening = true;
+    tapFreqs = [];
+    $('melonBtn').classList.add('listening');
+    $('melonFace').textContent = '👂';
+    $('stageLabel').textContent = '듣고 있어요… 수박을 통통 두드려 주세요!';
+    $('stageSub').innerHTML = `손가락 마디로 <b>${TAPS_NEEDED}번</b> 두드리면 자동으로 분석돼요.`;
+    $('tapDots').textContent = '';
+    $('result').style.display = 'none';
+
+    listenTimer = setTimeout(() => {
+      if (tapFreqs.length > 0) finishMeasurement();
+      else { stopListening(); toast('타격음이 감지되지 않았어요. 마이크를 더 가까이 대고 다시 해보세요!'); }
+    }, LISTEN_TIMEOUT_MS);
+
+    detectTaps();
+  }
+
+  function stopListening() {
+    listening = false;
+    clearTimeout(listenTimer);
+    if (micStream) micStream.getTracks().forEach(t => t.stop());
+    if (audioCtx) audioCtx.close();
+    micStream = audioCtx = analyser = null;
+    $('melonBtn').classList.remove('listening');
+    $('melonFace').textContent = '🎤';
+    $('stageLabel').textContent = '수박을 눌러 측정을 시작하세요';
+    $('stageSub').innerHTML = '마이크를 수박 가까이 대고,<br>손가락 마디로 <b>3~5번</b> 통통 두드려 주세요.';
+  }
+
+  function detectTaps() {
+    const timeBuf = new Float32Array(analyser.fftSize);
+    const freqBuf = new Float32Array(analyser.frequencyBinCount);
+    let lastTapAt = 0;
+
+    function frame() {
+      if (!listening) return;
+      analyser.getFloatTimeDomainData(timeBuf);
+
+      let rms = 0;
+      for (let i = 0; i < timeBuf.length; i++) rms += timeBuf[i] * timeBuf[i];
+      rms = Math.sqrt(rms / timeBuf.length);
+
+      const now = performance.now();
+      // 순간적으로 큰 소리(타격 transient) + 직전 탭에서 250ms 이상 경과
+      if (rms > 0.045 && now - lastTapAt > 250) {
+        lastTapAt = now;
+        // 트랜지언트 직후 스펙트럼에서 지배 주파수 추출
+        setTimeout(() => {
+          if (!listening) return;
+          analyser.getFloatFrequencyData(freqBuf);
+          const f = dominantFrequency(freqBuf);
+          if (f) {
+            tapFreqs.push(f);
+            $('tapDots').textContent = '🔴'.repeat(tapFreqs.length);
+            if (navigator.vibrate) navigator.vibrate(30);
+            if (tapFreqs.length >= TAPS_NEEDED) finishMeasurement();
+          }
+        }, 40);
+      }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function dominantFrequency(freqBuf) {
+    const hzPerBin = audioCtx.sampleRate / analyser.fftSize;
+    const lo = Math.floor(FREQ.MIN / hzPerBin);
+    const hi = Math.min(Math.ceil(FREQ.MAX / hzPerBin), freqBuf.length - 1);
+    let bestBin = -1, bestDb = -Infinity;
+    for (let i = lo; i <= hi; i++) {
+      if (freqBuf[i] > bestDb) { bestDb = freqBuf[i]; bestBin = i; }
+    }
+    if (bestBin < 0 || bestDb < -80) return null;   // 유의미한 피크 없음
+    return bestBin * hzPerBin;
+  }
+
+  function median(arr) {
+    const s = [...arr].sort((a, b) => a - b);
+    const m = Math.floor(s.length / 2);
+    return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+  }
+
+  // ── 결과 판정 ───────────────────────────────
+  function finishMeasurement() {
+    const freq = median(tapFreqs);
+    stopListening();
+    clearTimeout(listenTimer);
+
+    let grade, emoji, title, cls, desc;
+    if (freq < FREQ.OVERRIPE_MAX) {
+      grade = 'overripe'; emoji = '🫠'; cls = 'overripe';
+      title = '너무 익었을 수 있어요';
+      desc = '소리가 퍽퍽하고 둔탁해요. 속이 갈라졌거나 물러졌을 수 있으니<br>빨리 드시는 게 좋아요!';
+    } else if (freq <= FREQ.RIPE_MAX) {
+      grade = 'ripe'; emoji = '🥳'; cls = 'ripe';
+      title = '잘 익은 수박이에요!';
+      desc = '통통 울리는 낮고 시원한 소리!<br>과육이 알맞게 익었을 가능성이 높아요. (당도는 보장 못 해요 😉)';
+    } else {
+      grade = 'unripe'; emoji = '🌱'; cls = 'unripe';
+      title = '아직 덜 익은 것 같아요';
+      desc = '딱딱하고 높은 소리가 나요.<br>과육이 아직 단단할 가능성이 커요. 며칠 기다려 보세요!';
+    }
+
+    const pct = percentile(freq);
+
+    $('verdictEmoji').textContent = emoji;
+    $('verdictTitle').textContent = title;
+    $('verdictTitle').className = 'title ' + cls;
+    $('verdictDesc').innerHTML = `측정된 공명 주파수: <b>${Math.round(freq)} Hz</b><br>${desc}`;
+    // 주파수 눈금 위치: 낮음(왼쪽) ↔ 높음(오른쪽), 60~350Hz 구간을 시각화
+    const pos = Math.min(1, Math.max(0, (freq - 60) / (350 - 60)));
+    $('freqMarker').style.left = (pos * 100).toFixed(1) + '%';
+
+    $('pctValue').textContent = `상위 ${pct}%`;
+    $('pctDesc').innerHTML = grade === 'ripe'
+      ? `전국 수박톡톡 이용자의 타격음 중<br><b>상위 ${pct}%</b>에 드는 "잘 익은 소리"예요! 🏆`
+      : `아쉽지만 "잘 익은 소리" 기준 <b>상위 ${pct}%</b>예요.<br>더 좋은 수박을 만나면 순위가 올라가요!`;
+
+    $('result').style.display = 'block';
+    $('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    if (grade !== 'ripe') $('marketCard').style.display = 'block';
+
+    saveMeasurement({ ts: Date.now(), freq: Math.round(freq), grade, pct, rated: false });
+    renderHistory();
+  }
+
+  // ── 상위 % (시뮬레이션 분포: 이상 주파수와의 거리 기반) ──
+  function percentile(freq) {
+    // 이용자 타격음이 IDEAL(160Hz) 중심, 표준편차 55Hz 정규분포라고 가정한 시뮬레이션.
+    // 이상값에 가까울수록 상위. 실서비스에서는 수집 데이터의 실제 분포로 대체.
+    const z = Math.abs(freq - FREQ.IDEAL) / 55;
+    const within = erf(z / Math.SQRT2);          // 이상값 ±z 범위 안에 드는 비율
+    const topPct = Math.max(1, Math.round(within * 100));
+    return topPct;
+  }
+  function erf(x) { // Abramowitz–Stegun 근사
+    const t = 1 / (1 + 0.3275911 * Math.abs(x));
+    const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+    return x >= 0 ? y : -y;
+  }
+
+  // ── 기록 & 재방문 평가 ───────────────────────
+  function saveMeasurement(m) {
+    const list = store.get('watermelons', []);
+    list.unshift(m);
+    store.set('watermelons', list.slice(0, 20));
+  }
+
+  const GRADE_LABEL = { ripe: '🥳 잘 익음', unripe: '🌱 덜 익음', overripe: '🫠 과숙' };
+  const RATE_LABEL = { good: '😋 꿀수박', soso: '😐 그럭저럭', bad: '😭 실패' };
+
+  function renderHistory() {
+    const list = store.get('watermelons', []);
+    if (!list.length) return;
+    $('historyCard').style.display = 'block';
+    $('historyList').innerHTML = list.map(m => {
+      const d = new Date(m.ts);
+      const date = `${d.getMonth() + 1}/${d.getDate()}`;
+      const rate = m.rate ? ` · 내 평가: ${RATE_LABEL[m.rate]}` : '';
+      return `<li><span>${date} · ${GRADE_LABEL[m.grade]} (${m.freq}Hz)</span><span>상위 ${m.pct}%${rate}</span></li>`;
+    }).join('');
+  }
+
+  function checkPendingRating() {
+    const list = store.get('watermelons', []);
+    const pending = list.find(m => !m.rated);
+    if (!pending) return;
+    // 측정 직후가 아니라 "다시 접속했을 때" 물어보기 (최소 3시간 경과)
+    if (Date.now() - pending.ts < 3 * 60 * 60 * 1000) return;
+
+    const d = new Date(pending.ts);
+    $('rateModalDesc').innerHTML =
+      `${d.getMonth() + 1}월 ${d.getDate()}일에 측정한 <b>${GRADE_LABEL[pending.grade]}</b> 판정 수박,<br>드셔보셨나요? 솔직한 평가가 수박톡톡을 더 똑똑하게 만들어요!`;
+    $('rateModal').classList.add('show');
+
+    document.querySelectorAll('.rate-btn').forEach(btn => {
+      btn.onclick = () => {
+        pending.rated = true;
+        pending.rate = btn.dataset.rate;
+        store.set('watermelons', list);
+        $('rateModal').classList.remove('show');
+        renderHistory();
+        if (btn.dataset.rate === 'bad') {
+          $('marketCard').style.display = 'block';
+          $('marketCard').scrollIntoView({ behavior: 'smooth' });
+          toast('저런… 다음엔 꼭 성공해요! 확실한 수박도 준비해 뒀어요 🧑‍🌾');
+        } else {
+          toast('평가 감사해요! 데이터가 쌓일수록 더 정확해져요 🍉');
+        }
+      };
+    });
+    $('rateLater').onclick = () => $('rateModal').classList.remove('show');
+  }
+
+  // ── 이벤트 바인딩 ───────────────────────────
+  $('melonBtn').addEventListener('click', () => listening ? null : startListening());
+  $('retryBtn').addEventListener('click', () => {
+    $('result').style.display = 'none';
+    startListening();
+    $('tapCard').scrollIntoView({ behavior: 'smooth' });
+  });
+
+  renderHistory();
+  checkPendingRating();
+})();
+</script>
+</body>
+</html>
