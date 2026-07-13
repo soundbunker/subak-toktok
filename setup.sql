@@ -6,7 +6,7 @@
 -- 관리자 판별: 이 이메일로 로그인한 사용자만 통계·소리 열람 가능
 create or replace function is_admin() returns boolean
 language sql stable as $$
-  select coalesce(auth.jwt()->>'email', '') = 'jejuwatch@gmail.com'
+  select coalesce(auth.jwt()->>'email', '') = 'play@soundb.kr'
 $$;
 
 -- ── 방문 기록 ──

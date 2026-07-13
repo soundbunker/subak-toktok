@@ -5,7 +5,7 @@
 // 비밀값: supabase secrets set COUPANG_ACCESS_KEY=... COUPANG_SECRET_KEY=...
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const ADMIN_EMAIL = "jejuwatch@gmail.com";
+const ADMIN_EMAIL = "play@soundb.kr";
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
