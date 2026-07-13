@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>수박톡톡 🍉 — 톡톡 치면 익은 정도를 알려드려요</title>
+<!-- 카톡/SNS 공유 미리보기 (Open Graph) -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="수박톡톡 🍉 — 두드리면 알려주는 수박 익은 정도">
+<meta property="og:description" content="폰을 대고 톡톡 3번! 소리로 수박 익은 정도를 판별하고 전국 랭킹까지. 사운드벙커 여름 시즌 서비스.">
+<meta property="og:image" content="https://soundbunker.github.io/subak-toktok/og.jpg">
+<meta property="og:url" content="https://soundbunker.github.io/subak-toktok/">
+<meta name="twitter:card" content="summary_large_image">
 <style>
   :root {
     --green-dark: #1b5e20;
@@ -149,6 +156,21 @@
   }
   .percentile-box .pct { font-size: 30px; font-weight: 800; color: #e65100; }
   .percentile-box .pct-desc { font-size: 13px; color: #795548; margin-top: 6px; line-height: 1.5; }
+
+  /* ── 공유 버튼 ─────────────────────── */
+  .share-row { display: flex; gap: 10px; margin-top: 16px; }
+  .share-btn {
+    flex: 1;
+    padding: 12px 8px;
+    font-size: 14px; font-weight: 700;
+    color: var(--green-dark);
+    background: #fff;
+    border: 2px solid var(--green-light);
+    border-radius: 12px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .share-btn:active { background: #f1f8e9; }
 
   /* ── 수박송 ───────────────────────── */
   .song-credit { font-size: 13px; color: var(--muted); margin: -6px 0 12px; }
@@ -313,6 +335,10 @@
       <div class="pct-desc" id="pctDesc"></div>
     </div>
 
+    <div class="share-row">
+      <button class="share-btn" id="shareResultBtn">📤 결과 자랑하기</button>
+      <button class="share-btn" id="copyResultBtn">🔗 링크 복사</button>
+    </div>
     <button class="big-btn secondary" id="retryBtn">🔁 다시 측정하기</button>
   </section>
 
@@ -363,6 +389,16 @@
     * 익은 정도 판별은 타격음 주파수 분석 기반의 참고용 결과이며, 당도를 보장하지 않습니다.<br>
     * 상위 % 통계는 프로토타입 시뮬레이션 데이터입니다.
   </p>
+
+  <!-- ── 공유 ─────────────────────────────── -->
+  <section class="card" style="text-align:center">
+    <h2 style="justify-content:center">📤 수박톡톡 알리기</h2>
+    <p class="stage-sub" style="margin-bottom:12px">수박 못 고르는 친구에게 공유해 주세요!</p>
+    <div class="share-row">
+      <button class="share-btn" id="shareSiteBtn">💬 카톡·문자로 공유</button>
+      <button class="share-btn" id="copySiteBtn">🔗 링크 복사</button>
+    </div>
+  </section>
 
   <!-- ── 사운드벙커 브랜드 ─────────────────── -->
   <footer class="brand">
@@ -640,6 +676,41 @@
     saveMeasurement({ ts: Date.now(), freq: Math.round(freq), grade, pct, rated: false });
     renderHistory();
     uploadTap({ freq: Math.round(freq), grade, pct }, audioBlob);
+    lastResult = { grade, pct };
+  }
+
+  // ── 공유하기 (모바일: 카톡 포함 시스템 공유창 / PC: 링크 복사) ──
+  const SITE_URL = 'https://soundbunker.github.io/subak-toktok/';
+  let lastResult = null;
+
+  function resultShareText() {
+    if (!lastResult) return '🍉 수박톡톡 — 수박을 두드리면 소리로 익은 정도를 알려줘요! 너도 두드려봐 👉';
+    const label = { ripe: '잘 익음 🥳', unripe: '덜 익음 🌱', overripe: '과숙 🫠' }[lastResult.grade];
+    return `🍉 방금 수박 두드려서 "${label}" 판정 받음! 내 타격음은 전국 상위 ${lastResult.pct}%. 너도 두드려봐 👉`;
+  }
+  async function share(text) {
+    if (navigator.share) {
+      try { await navigator.share({ title: '수박톡톡', text, url: SITE_URL }); return; }
+      catch (e) { if (e.name === 'AbortError') return; }
+    }
+    copyLink(text);
+  }
+  async function copyLink(text) {
+    const payload = (text ? text + ' ' : '') + SITE_URL;
+    try {
+      await navigator.clipboard.writeText(payload);
+    } catch {
+      // 구형/제한 환경 폴백: 임시 textarea + execCommand
+      const ta = document.createElement('textarea');
+      ta.value = payload;
+      ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand('copy');
+      ta.remove();
+      if (!ok) { toast('복사가 안 됐어요. 주소창의 링크를 직접 복사해 주세요 🙏'); return; }
+    }
+    toast('복사 완료! 카톡에 붙여넣기 하세요 📋');
   }
 
   // ── 상위 % (시뮬레이션 분포: 이상 주파수와의 거리 기반) ──
@@ -710,6 +781,11 @@
   }
 
   // ── 이벤트 바인딩 ───────────────────────────
+  $('shareResultBtn').addEventListener('click', () => share(resultShareText()));
+  $('copyResultBtn').addEventListener('click', () => copyLink(resultShareText()));
+  $('shareSiteBtn').addEventListener('click', () => share('🍉 수박톡톡 — 수박을 두드리면 소리로 익은 정도를 알려줘요! 너도 두드려봐 👉'));
+  $('copySiteBtn').addEventListener('click', () => copyLink(''));
+
   $('melonBtn').addEventListener('click', () => listening ? null : startListening());
   $('retryBtn').addEventListener('click', () => {
     $('result').style.display = 'none';
