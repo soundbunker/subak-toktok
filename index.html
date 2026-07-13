@@ -152,27 +152,15 @@
   }
   .market h2 { color: var(--red-dark); }
   .market a { text-decoration: none; }
-  .market-list { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
-  .banner {
-    display: flex; align-items: center; gap: 14px;
-    background: linear-gradient(135deg, var(--red), var(--red-dark));
-    border-radius: 14px;
-    padding: 14px 16px;
-    box-shadow: 0 4px 12px rgba(198, 40, 40, 0.3);
-    transition: transform 0.1s ease;
+  .market-list {
+    display: flex; flex-wrap: wrap; justify-content: center;
+    gap: 12px; margin-top: 14px;
   }
-  .banner:active { transform: scale(0.98); }
-  .banner-emoji {
-    font-size: 30px;
-    background: rgba(255, 255, 255, 0.25);
-    border-radius: 12px;
-    width: 52px; height: 52px;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
+  .market-list iframe {
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 3px 10px rgba(198, 40, 40, 0.18);
   }
-  .banner-body { display: flex; flex-direction: column; gap: 3px; color: #fff; }
-  .banner-body b { font-size: 16px; }
-  .banner-body small { font-size: 12px; opacity: 0.85; }
   .market p { font-size: 14px; line-height: 1.7; color: #6d4c41; }
   .disclosure {
     margin-top: 12px;
@@ -327,26 +315,14 @@
     <p>
       수박톡톡에 실패하셨나요? 괜찮아요,<br>
       수박 고르기는 원래 어려운 거예요.<br>
-      두드릴 필요도 없이 맛있는 <b>우리나라 최고의 수박,<br>
-      농부님의 꿀수박</b>을 준비했어요.
+      상심한 당신을 위해 <b>두드릴 필요 없는<br>
+      추천템</b>을 준비했어요.
     </p>
     <div class="market-list">
-      <a class="banner" href="https://link.coupang.com/a/fmdlC3XdAa" target="_blank" rel="noopener sponsored">
-        <span class="banner-emoji">🍉</span>
-        <span class="banner-body"><b>농부의 꿀수박 1호</b><small>쿠팡에서 주문하기 →</small></span>
-      </a>
-      <a class="banner" href="https://link.coupang.com/a/fmcTB3IBwa" target="_blank" rel="noopener sponsored">
-        <span class="banner-emoji">🍉</span>
-        <span class="banner-body"><b>농부의 꿀수박 2호</b><small>쿠팡에서 주문하기 →</small></span>
-      </a>
-      <a class="banner" href="https://link.coupang.com/a/fmc0prSs5A" target="_blank" rel="noopener sponsored">
-        <span class="banner-emoji">🍉</span>
-        <span class="banner-body"><b>농부의 꿀수박 3호</b><small>쿠팡에서 주문하기 →</small></span>
-      </a>
-      <a class="banner" href="https://link.coupang.com/a/fmc30iyp88" target="_blank" rel="noopener sponsored">
-        <span class="banner-emoji">🍉</span>
-        <span class="banner-body"><b>농부의 꿀수박 4호</b><small>쿠팡에서 주문하기 →</small></span>
-      </a>
+      <iframe src="https://coupa.ng/cn2Lpz" width="120" height="240" frameborder="0" scrolling="no" referrerpolicy="unsafe-url" browsingtopics></iframe>
+      <iframe src="https://coupa.ng/cn2LTZ" width="120" height="240" frameborder="0" scrolling="no" referrerpolicy="unsafe-url" browsingtopics></iframe>
+      <iframe src="https://coupa.ng/cn2LUt" width="120" height="240" frameborder="0" scrolling="no" referrerpolicy="unsafe-url" browsingtopics></iframe>
+      <iframe src="https://coupa.ng/cn2LUN" width="120" height="240" frameborder="0" scrolling="no" referrerpolicy="unsafe-url" browsingtopics></iframe>
     </div>
     <p class="disclosure">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>
   </section>
