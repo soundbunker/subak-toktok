@@ -41,6 +41,15 @@
   }
   header p { color: var(--muted); font-size: 14px; margin-top: 6px; }
 
+  .stats-bar {
+    display: none; justify-content: center; flex-wrap: wrap; gap: 8px 20px;
+    background: #fff; border-radius: 14px;
+    padding: 11px 14px; margin-bottom: 16px;
+    font-size: 13px; color: var(--muted);
+    box-shadow: 0 4px 16px rgba(27, 94, 32, 0.08);
+  }
+  .stats-bar b { color: var(--red-dark); }
+
   .card {
     background: #fff;
     border-radius: var(--radius);
@@ -259,6 +268,11 @@
     <p>손가락으로 톡톡, 소리로 알아보는 수박의 익은 정도</p>
   </header>
 
+  <div class="stats-bar" id="statsBar">
+    <span>🍉 지금 수박 고르는 중 <b id="statLive">–</b>명</span>
+    <span>👂 두드려본 수박 <b id="statTaps">–</b>개</span>
+  </div>
+
   <!-- ── 측정 카드 ──────────────────────────── -->
   <section class="card" id="tapCard">
     <div class="melon-stage">
@@ -362,6 +376,8 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 (() => {
   'use strict';
@@ -395,6 +411,69 @@
     toast._t = setTimeout(() => el.classList.remove('show'), 2800);
   }
 
+  // ── 백엔드 (Supabase) — config.js에 키가 채워지면 자동 활성화 ──
+  const CFG = window.SUBAK_CONFIG || {};
+  const sb = (CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY && window.supabase)
+    ? window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY)
+    : null;
+  const deviceId = (() => {
+    let d = localStorage.getItem('deviceId');
+    if (!d) { d = crypto.randomUUID(); localStorage.setItem('deviceId', d); }
+    return d;
+  })();
+
+  async function refreshCounts() {
+    if (!sb) return;
+    const { data } = await sb.rpc('public_counts');
+    if (data) $('statTaps').textContent = data.taps.toLocaleString();
+  }
+
+  function initBackend() {
+    if (!sb) return;
+    $('statsBar').style.display = 'flex';
+    sb.from('visits').insert({ device: deviceId }).then(() => {});
+    refreshCounts();
+    // 실시간 접속자 수 (presence)
+    const ch = sb.channel('subak-live', { config: { presence: { key: deviceId } } });
+    ch.on('presence', { event: 'sync' }, () => {
+      $('statLive').textContent = Object.keys(ch.presenceState()).length;
+    });
+    ch.subscribe((s) => { if (s === 'SUBSCRIBED') ch.track({ t: 1 }); });
+  }
+
+  // ── 타격음 녹음 & 업로드 ──
+  let recorder = null, recChunks = [];
+  function startRecorder(stream) {
+    if (!sb || typeof MediaRecorder === 'undefined') return;
+    recChunks = [];
+    try {
+      const mime = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm'
+                 : MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '';
+      recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+      recorder.ondataavailable = (e) => { if (e.data.size) recChunks.push(e.data); };
+      recorder.start();
+    } catch { recorder = null; }
+  }
+  function stopRecorder() {
+    return new Promise((resolve) => {
+      if (!recorder || recorder.state === 'inactive') return resolve(null);
+      recorder.onstop = () => resolve(new Blob(recChunks, { type: recorder.mimeType || 'audio/webm' }));
+      recorder.stop();
+    });
+  }
+  async function uploadTap(meta, blob) {
+    if (!sb) return;
+    let audio_path = null;
+    if (blob && blob.size > 0) {
+      const ext = blob.type.includes('mp4') ? 'm4a' : 'webm';
+      const path = `${new Date().toISOString().slice(0, 10)}/${Date.now()}-${deviceId.slice(0, 8)}.${ext}`;
+      const { error } = await sb.storage.from('taps').upload(path, blob, { contentType: blob.type });
+      if (!error) audio_path = path;
+    }
+    await sb.from('taps').insert({ ...meta, audio_path, device: deviceId });
+    refreshCounts();
+  }
+
   // ── 오디오 측정 ─────────────────────────────
   let audioCtx = null, analyser = null, micStream = null;
   let listening = false, tapFreqs = [], listenTimer = null;
@@ -420,6 +499,7 @@
     analyser.fftSize = 8192;             // 낮은 주파수 해상도 확보 (~5.4Hz/bin @44.1kHz)
     analyser.smoothingTimeConstant = 0;
     src.connect(analyser);
+    startRecorder(micStream);
 
     listening = true;
     tapFreqs = [];
@@ -441,6 +521,8 @@
   function stopListening() {
     listening = false;
     clearTimeout(listenTimer);
+    if (recorder && recorder.state !== 'inactive') recorder.stop();  // 미완료 측정은 녹음 폐기
+    recorder = null;
     if (micStream) micStream.getTracks().forEach(t => t.stop());
     if (audioCtx) audioCtx.close();
     micStream = audioCtx = analyser = null;
@@ -504,8 +586,9 @@
   }
 
   // ── 결과 판정 ───────────────────────────────
-  function finishMeasurement() {
+  async function finishMeasurement() {
     const freq = median(tapFreqs);
+    const audioBlob = await stopRecorder();   // 트랙을 끊기 전에 녹음부터 회수
     stopListening();
     clearTimeout(listenTimer);
 
@@ -544,6 +627,7 @@
 
     saveMeasurement({ ts: Date.now(), freq: Math.round(freq), grade, pct, rated: false });
     renderHistory();
+    uploadTap({ freq: Math.round(freq), grade, pct }, audioBlob);
   }
 
   // ── 상위 % (시뮬레이션 분포: 이상 주파수와의 거리 기반) ──
@@ -623,6 +707,7 @@
 
   renderHistory();
   checkPendingRating();
+  initBackend();
 })();
 </script>
 </body>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>수박톡톡 관리자 🍉🔐</title>
+<style>
+  :root {
+    --green-dark: #1b5e20; --green: #2e7d32;
+    --red-dark: #c62828; --ink: #263238; --muted: #78909c;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", sans-serif;
+    background: linear-gradient(160deg, #e8f5e9 0%, #fffde7 100%);
+    color: var(--ink); min-height: 100vh;
+    display: flex; justify-content: center;
+  }
+  .app { width: 100%; max-width: 720px; padding: 24px 16px 60px; }
+  h1 { font-size: 24px; color: var(--green-dark); text-align: center; padding: 8px 0 20px; }
+  .card {
+    background: #fff; border-radius: 16px; padding: 20px 18px;
+    margin-bottom: 16px; box-shadow: 0 4px 16px rgba(27, 94, 32, 0.08);
+  }
+  .card h2 { font-size: 16px; color: var(--green-dark); margin-bottom: 14px; }
+  input {
+    width: 100%; padding: 12px 14px; margin-bottom: 10px;
+    border: 1.5px solid #c8e6c9; border-radius: 10px; font-size: 15px;
+  }
+  button {
+    width: 100%; padding: 13px; font-size: 15px; font-weight: 700;
+    color: #fff; background: var(--green); border: none; border-radius: 10px; cursor: pointer;
+  }
+  .err { color: var(--red-dark); font-size: 13px; margin-top: 8px; text-align: center; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+  .tile { background: #f1f8e9; border-radius: 12px; padding: 14px; text-align: center; }
+  .tile .num { font-size: 24px; font-weight: 800; color: var(--green-dark); }
+  .tile .lbl { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 7px 6px; text-align: right; border-bottom: 1px solid #eee; }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--muted); font-weight: 600; }
+  .sound { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px dashed #e0e0e0; font-size: 13px; flex-wrap: wrap; }
+  .sound audio { height: 34px; flex: 1; min-width: 200px; }
+  .badge { padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+  .badge.ripe { background: #ffebee; color: var(--red-dark); }
+  .badge.unripe { background: #e8f5e9; color: var(--green); }
+  .badge.overripe { background: #efebe9; color: #6d4c41; }
+  .note { font-size: 13px; color: var(--muted); line-height: 1.7; }
+  #dash { display: none; }
+  .logout { background: none; border: none; color: var(--muted); font-size: 12px; width: auto; text-decoration: underline; display: block; margin: 0 auto; }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>🍉 수박톡톡 관리자</h1>
+
+  <!-- 로그인 -->
+  <div class="card" id="loginCard">
+    <h2>🔐 관리자 로그인</h2>
+    <input type="email" id="email" placeholder="이메일" autocomplete="username">
+    <input type="password" id="pw" placeholder="비밀번호" autocomplete="current-password">
+    <button id="loginBtn">로그인</button>
+    <div class="err" id="loginErr"></div>
+  </div>
+
+  <!-- 대시보드 -->
+  <div id="dash">
+    <div class="card">
+      <h2>📊 한눈에 보기</h2>
+      <div class="tiles" id="tiles"></div>
+    </div>
+
+    <div class="card">
+      <h2>📅 일별 통계 (최근 30일)</h2>
+      <table><thead><tr><th>날짜</th><th>방문</th><th>두드림</th></tr></thead><tbody id="dailyBody"></tbody></table>
+    </div>
+
+    <div class="card">
+      <h2>🗓️ 월별 통계 (최근 12개월)</h2>
+      <table><thead><tr><th>월</th><th>방문</th><th>두드림</th></tr></thead><tbody id="monthlyBody"></tbody></table>
+    </div>
+
+    <div class="card">
+      <h2>🔊 최근 저장된 타격음 (최근 20개)</h2>
+      <div id="sounds"></div>
+    </div>
+
+    <div class="card">
+      <h2>🛒 쿠팡 파트너스 실적</h2>
+      <p class="note">
+        링크별 클릭·주문·수익의 공식 수치는
+        <a href="https://partners.coupang.com" target="_blank" rel="noopener">쿠팡 파트너스 대시보드 &gt; 리포트</a>에서
+        일별/월별로 확인할 수 있어요. 배너(iframe) 클릭은 쿠팡 도메인 안에서 일어나서
+        우리 서버로는 직접 집계할 수 없습니다.<br><br>
+        쿠팡 파트너스 <b>Open API 키</b>를 발급받으면 이 자리에 클릭·주문·수수료 리포트를
+        자동으로 불러오도록 연동할 수 있어요. (파트너스 사이트 &gt; 추가기능 &gt; API 관리)
+      </p>
+    </div>
+
+    <button class="logout" id="logoutBtn">로그아웃</button>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const CFG = window.SUBAK_CONFIG || {};
+  if (!CFG.SUPABASE_URL || !CFG.SUPABASE_ANON_KEY) {
+    $('loginCard').innerHTML = '<p class="note">⚠️ 아직 서버(Supabase)가 연결되지 않았어요. config.js에 프로젝트 키를 넣으면 활성화됩니다.</p>';
+    return;
+  }
+  const sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
+
+  const GRADE = { ripe: ['잘 익음', 'ripe'], unripe: ['덜 익음', 'unripe'], overripe: ['과숙', 'overripe'] };
+
+  async function login() {
+    $('loginErr').textContent = '';
+    const { error } = await sb.auth.signInWithPassword({ email: $('email').value.trim(), password: $('pw').value });
+    if (error) { $('loginErr').textContent = '로그인 실패: ' + error.message; return; }
+    showDash();
+  }
+
+  async function showDash() {
+    const { data: stats } = await sb.rpc('admin_stats');
+    if (!stats) { $('loginErr').textContent = '이 계정에는 관리자 권한이 없어요.'; await sb.auth.signOut(); return; }
+    $('loginCard').style.display = 'none';
+    $('dash').style.display = 'block';
+
+    $('tiles').innerHTML = [
+      [stats.visits_today, '오늘 방문'],
+      [stats.visits_total, '누적 방문'],
+      [stats.devices, '고유 기기'],
+      [stats.taps_today, '오늘 두드림'],
+      [stats.taps_total, '누적 두드림'],
+      [stats.sounds_total, '저장된 소리'],
+    ].map(([n, l]) => `<div class="tile"><div class="num">${(n ?? 0).toLocaleString()}</div><div class="lbl">${l}</div></div>`).join('');
+
+    const { data: daily } = await sb.rpc('admin_daily');
+    $('dailyBody').innerHTML = (daily || []).map(r =>
+      `<tr><td>${r.day}</td><td>${r.visits}</td><td>${r.taps}</td></tr>`).join('');
+
+    const { data: monthly } = await sb.rpc('admin_monthly');
+    $('monthlyBody').innerHTML = (monthly || []).map(r =>
+      `<tr><td>${r.month}</td><td>${r.visits}</td><td>${r.taps}</td></tr>`).join('');
+
+    const { data: taps } = await sb.from('taps').select('*')
+      .not('audio_path', 'is', null).order('ts', { ascending: false }).limit(20);
+    const sounds = await Promise.all((taps || []).map(async (t) => {
+      const { data: signed } = await sb.storage.from('taps').createSignedUrl(t.audio_path, 3600);
+      const d = new Date(t.ts);
+      const when = `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      const [label, cls] = GRADE[t.grade] || [t.grade, ''];
+      return `<div class="sound"><span>${when}</span><span class="badge ${cls}">${label} ${t.freq}Hz</span>` +
+        (signed ? `<audio controls preload="none" src="${signed.signedUrl}"></audio>` : '<span>재생 불가</span>') + `</div>`;
+    }));
+    $('sounds').innerHTML = sounds.join('') || '<p class="note">아직 저장된 타격음이 없어요.</p>';
+  }
+
+  $('loginBtn').addEventListener('click', login);
+  $('pw').addEventListener('keydown', (e) => { if (e.key === 'Enter') login(); });
+  $('logoutBtn').addEventListener('click', async () => { await sb.auth.signOut(); location.reload(); });
+
+  // 이미 로그인된 세션이면 바로 대시보드
+  sb.auth.getSession().then(({ data }) => { if (data.session) showDash(); });
+})();
+</script>
+</body>
+</html>
