@@ -178,36 +178,6 @@
   .song-embed { border-radius: 14px; overflow: hidden; aspect-ratio: 16 / 9; background: #000; }
   .song-embed iframe { width: 100%; height: 100%; border: 0; }
 
-  /* ── 실패 위로 / 마켓 ──────────────── */
-  .market {
-    background: linear-gradient(135deg, #fce4ec, #f8bbd0);
-  }
-  .market h2 { color: var(--red-dark); }
-  .market a { text-decoration: none; }
-  .market-group {
-    margin-top: 16px;
-    font-size: 14px !important;
-    font-weight: 700;
-    color: var(--red-dark) !important;
-  }
-  .market-list {
-    display: flex; flex-wrap: wrap; justify-content: center;
-    gap: 12px; margin-top: 10px;
-  }
-  .market-list iframe {
-    border-radius: 10px;
-    background: #fff;
-    box-shadow: 0 3px 10px rgba(198, 40, 40, 0.18);
-  }
-  .market p { font-size: 14px; line-height: 1.7; color: #6d4c41; }
-  .disclosure {
-    margin-top: 12px;
-    font-size: 11px !important;
-    color: #a1887f !important;
-    text-align: center;
-    line-height: 1.6;
-  }
-
   /* ── 사운드벙커 브랜드 푸터 ─────────────── */
   .brand {
     text-align: center;
@@ -355,30 +325,6 @@
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowfullscreen></iframe>
     </div>
-  </section>
-
-  <!-- ── 농부의 꿀수박 마켓 (쿠팡 파트너스, 상시 노출) ─── -->
-  <section class="card market" id="marketCard">
-    <h2>🧑‍🌾 두드릴 필요 없는 꿀수박 마켓</h2>
-    <p>
-      수박톡톡에 실패하셨나요? 괜찮아요,<br>
-      수박 고르기는 원래 어려운 거예요.<br>
-      상심한 당신을 위해 <b>두드릴 필요 없는<br>
-      추천템</b>을 준비했어요.
-    </p>
-    <p class="market-group">🍉 오늘의 꿀수박</p>
-    <div class="market-list">
-      <iframe src="https://coupa.ng/cn2Lpz" width="120" height="240" frameborder="0" scrolling="no" referrerpolicy="unsafe-url" browsingtopics></iframe>
-      <iframe src="https://coupa.ng/cn2M72" width="120" height="240" frameborder="0" scrolling="no" referrerpolicy="unsafe-url" browsingtopics></iframe>
-      <iframe src="https://coupa.ng/cn2M80" width="120" height="240" frameborder="0" scrolling="no" referrerpolicy="unsafe-url" browsingtopics></iframe>
-    </div>
-    <p class="market-group">🧊 수박이랑 같이 쓰면 좋은 것들</p>
-    <div class="market-list">
-      <iframe src="https://coupa.ng/cn2LTZ" width="120" height="240" frameborder="0" scrolling="no" referrerpolicy="unsafe-url" browsingtopics></iframe>
-      <iframe src="https://coupa.ng/cn2NVn" width="120" height="240" frameborder="0" scrolling="no" referrerpolicy="unsafe-url" browsingtopics></iframe>
-      <iframe src="https://coupa.ng/cn2NWc" width="120" height="240" frameborder="0" scrolling="no" referrerpolicy="unsafe-url" browsingtopics></iframe>
-    </div>
-    <p class="disclosure">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>
   </section>
 
   <!-- ── 나의 기록 ─────────────────────────── -->
@@ -803,12 +749,9 @@
         store.set('watermelons', list);
         $('rateModal').classList.remove('show');
         renderHistory();
-        if (btn.dataset.rate === 'bad') {
-          $('marketCard').scrollIntoView({ behavior: 'smooth' });
-          toast('저런… 다음엔 꼭 성공해요! 확실한 수박도 준비해 뒀어요 🧑‍🌾');
-        } else {
-          toast('평가 감사해요! 데이터가 쌓일수록 더 정확해져요 🍉');
-        }
+        toast(btn.dataset.rate === 'bad'
+          ? '저런… 다음엔 꼭 성공해요! 데이터가 쌓일수록 더 정확해져요 🍉'
+          : '평가 감사해요! 데이터가 쌓일수록 더 정확해져요 🍉');
       };
     });
     $('rateLater').onclick = () => $('rateModal').classList.remove('show');
