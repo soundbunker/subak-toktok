@@ -154,7 +154,8 @@
     padding: 16px;
     text-align: center;
   }
-  .percentile-box .pct { font-size: 30px; font-weight: 800; color: #e65100; }
+  .percentile-box .pct-label { font-size: 13px; font-weight: 700; color: #795548; margin-bottom: 4px; }
+  .percentile-box .pct { font-size: 34px; font-weight: 800; color: #e65100; }
   .percentile-box .pct-desc { font-size: 13px; color: #795548; margin-top: 6px; line-height: 1.5; }
 
   /* ── 공유 버튼 ─────────────────────── */
@@ -331,6 +332,7 @@
     </div>
 
     <div class="percentile-box">
+      <div class="pct-label">🍉 꿀수박 소리 점수 (100점 만점)</div>
       <div class="pct" id="pctValue">—</div>
       <div class="pct-desc" id="pctDesc"></div>
     </div>
@@ -387,7 +389,7 @@
 
   <p class="footnote">
     * 익은 정도 판별은 타격음 주파수 분석 기반의 참고용 결과이며, 당도를 보장하지 않습니다.<br>
-    * 상위 % 통계는 프로토타입 시뮬레이션 데이터입니다.
+    * 소리 점수는 "잘 익은 수박의 이상적인 소리"와 얼마나 비슷한지를 나타내는 참고 지표입니다.
   </p>
 
   <!-- ── 공유 ─────────────────────────────── -->
@@ -584,6 +586,8 @@
     const timeBuf = new Float32Array(analyser.fftSize);
     const freqBuf = new Float32Array(analyser.frequencyBinCount);
     let lastTapAt = 0;
+    let noiseFloor = 0.004;  // 주변 소음 레벨 (지수이동평균으로 계속 학습)
+    let prevRms = 0;
 
     function frame() {
       if (!listening) return;
@@ -594,8 +598,15 @@
       rms = Math.sqrt(rms / timeBuf.length);
 
       const now = performance.now();
-      // 순간적으로 큰 소리(타격 transient) + 직전 탭에서 250ms 이상 경과
-      if (rms > 0.045 && now - lastTapAt > 250) {
+      // "바로 앞의 소리"만 인정하는 3중 조건:
+      //  ① 주변 소음보다 5배 이상 큼 (가까운 소리일수록 압도적으로 큼)
+      //  ② 직전 순간 대비 갑자기 터진 소리 (타격 특유의 트랜지언트)
+      //  ③ 직전 탭에서 250ms 이상 경과
+      const isTap = rms > Math.max(0.07, noiseFloor * 5)
+        && rms > prevRms * 2.5
+        && now - lastTapAt > 250;
+
+      if (isTap) {
         lastTapAt = now;
         // 트랜지언트 직후 스펙트럼에서 지배 주파수 추출
         setTimeout(() => {
@@ -609,7 +620,11 @@
             if (tapFreqs.length >= TAPS_NEEDED) finishMeasurement();
           }
         }, 40);
+      } else {
+        // 타격이 아닐 때만 소음 레벨 갱신 → 시끄러운 곳일수록 기준이 자동 상승
+        noiseFloor = noiseFloor * 0.95 + rms * 0.05;
       }
+      prevRms = rms;
       requestAnimationFrame(frame);
     }
     requestAnimationFrame(frame);
@@ -620,10 +635,15 @@
     const lo = Math.floor(FREQ.MIN / hzPerBin);
     const hi = Math.min(Math.ceil(FREQ.MAX / hzPerBin), freqBuf.length - 1);
     let bestBin = -1, bestDb = -Infinity;
+    const band = [];
     for (let i = lo; i <= hi; i++) {
+      band.push(freqBuf[i]);
       if (freqBuf[i] > bestDb) { bestDb = freqBuf[i]; bestBin = i; }
     }
     if (bestBin < 0 || bestDb < -80) return null;   // 유의미한 피크 없음
+    // 피크가 대역 평균보다 뚜렷이 솟아야 함 (웅성거림 같은 퍼진 소음 걸러내기)
+    const medianDb = band.sort((a, b) => a - b)[Math.floor(band.length / 2)];
+    if (bestDb - medianDb < 10) return null;
     return bestBin * hzPerBin;
   }
 
@@ -635,6 +655,16 @@
 
   // ── 결과 판정 ───────────────────────────────
   async function finishMeasurement() {
+    // 3번의 타격음이 서로 너무 다르면 = 주변 잡음이 끼어든 것 → 재측정 유도
+    if (tapFreqs.length >= TAPS_NEEDED) {
+      const sorted = [...tapFreqs].sort((a, b) => a - b);
+      if (sorted[sorted.length - 1] - sorted[0] > 90) {
+        stopListening();
+        clearTimeout(listenTimer);
+        toast('소리가 뒤죽박죽 섞였어요 🙉 조금 더 조용한 곳에서 다시 두드려 주세요!');
+        return;
+      }
+    }
     const freq = median(tapFreqs);
     const audioBlob = await stopRecorder();   // 트랙을 끊기 전에 녹음부터 회수
     stopListening();
@@ -656,6 +686,7 @@
     }
 
     const pct = percentile(freq);
+    const score = Math.max(1, Math.round(100 - pct));   // 100점 만점, 높을수록 잘 익은 소리
 
     $('verdictEmoji').textContent = emoji;
     $('verdictTitle').textContent = title;
@@ -665,10 +696,12 @@
     const pos = Math.min(1, Math.max(0, (freq - 60) / (350 - 60)));
     $('freqMarker').style.left = (pos * 100).toFixed(1) + '%';
 
-    $('pctValue').textContent = `상위 ${pct}%`;
-    $('pctDesc').innerHTML = grade === 'ripe'
-      ? `전국 수박톡톡 이용자의 타격음 중<br><b>상위 ${pct}%</b>에 드는 "잘 익은 소리"예요! 🏆`
-      : `아쉽지만 "잘 익은 소리" 기준 <b>상위 ${pct}%</b>예요.<br>더 좋은 수박을 만나면 순위가 올라가요!`;
+    $('pctValue').textContent = `${score}점`;
+    $('pctDesc').innerHTML =
+      score >= 90 ? '국가대표급 꿀수박 소리! 🏆 이건 사야 해요.' :
+      score >= 70 ? '아주 잘 익은 소리예요 🥇 믿고 골라도 좋아요!' :
+      score >= 50 ? '나쁘지 않은 소리예요 🙂 반반의 확률!' :
+      '잘 익은 수박 소리와는 거리가 있어요 🌱<br>다른 수박도 두드려보세요!';
 
     $('result').style.display = 'block';
     $('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -676,7 +709,7 @@
     saveMeasurement({ ts: Date.now(), freq: Math.round(freq), grade, pct, rated: false });
     renderHistory();
     uploadTap({ freq: Math.round(freq), grade, pct }, audioBlob);
-    lastResult = { grade, pct };
+    lastResult = { grade, score };
   }
 
   // ── 공유하기 (모바일: 카톡 포함 시스템 공유창 / PC: 링크 복사) ──
@@ -686,7 +719,7 @@
   function resultShareText() {
     if (!lastResult) return '🍉 수박톡톡 — 수박을 두드리면 소리로 익은 정도를 알려줘요! 너도 두드려봐 👉';
     const label = { ripe: '잘 익음 🥳', unripe: '덜 익음 🌱', overripe: '과숙 🫠' }[lastResult.grade];
-    return `🍉 방금 수박 두드려서 "${label}" 판정 받음! 내 타격음은 전국 상위 ${lastResult.pct}%. 너도 두드려봐 👉`;
+    return `🍉 방금 수박 두드려서 "${label}" 판정 받음! 꿀수박 소리 점수 ${lastResult.score}점. 너도 두드려봐 👉`;
   }
   async function share(text) {
     if (navigator.share) {
@@ -746,7 +779,8 @@
       const d = new Date(m.ts);
       const date = `${d.getMonth() + 1}/${d.getDate()}`;
       const rate = m.rate ? ` · 내 평가: ${RATE_LABEL[m.rate]}` : '';
-      return `<li><span>${date} · ${GRADE_LABEL[m.grade]} (${m.freq}Hz)</span><span>상위 ${m.pct}%${rate}</span></li>`;
+      const score = Math.max(1, Math.round(100 - m.pct));
+      return `<li><span>${date} · ${GRADE_LABEL[m.grade]} (${m.freq}Hz)</span><span>${score}점${rate}</span></li>`;
     }).join('');
   }
 
